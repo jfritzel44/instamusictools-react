@@ -102,9 +102,6 @@ function PianoVideo() {
   }
 
   function handleStop() {
-    console.log("Recorced Chunks are ");
-    console.log(recordedChunks);
-
     const blob = new Blob(recordedChunks, { type: "video/webm" });
     const url = URL.createObjectURL(blob);
     if (downloadLinkRef.current) {
@@ -116,6 +113,7 @@ function PianoVideo() {
   }
 
   function startRecording() {
+    setRecordedChunks([]); // Clear the recorded chunks here
     setVideoAvailable(false);
 
     if (videoRef.current && videoRef.current.srcObject) {
