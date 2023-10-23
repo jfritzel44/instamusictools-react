@@ -5,6 +5,8 @@ import { faVideo } from "@fortawesome/free-solid-svg-icons";
 import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import Button from "../shared/Button";
 import DownloadButton from "../shared/DownloadButton";
+import Dropdown from "react-bootstrap/Dropdown";
+import VideoDropdown from "./VideoSourceDropdown";
 
 function PianoVideo() {
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
@@ -67,13 +69,6 @@ function PianoVideo() {
         return updated;
       });
     }
-  }
-
-  function handleDownload() {
-    // Wait for a short delay, then reset the recordedChunks
-    setTimeout(() => {
-      setRecordedChunks([]);
-    }, 200);
   }
 
   async function initCamera(deviceId: string) {
@@ -149,6 +144,8 @@ function PianoVideo() {
 
   return (
     <div className="main-container">
+      <VideoDropdown onSelect={(deviceId) => initCamera(deviceId)} />
+
       <div className="video-container">
         <video ref={videoRef} width="350" height="622" autoPlay></video>
         <canvas ref={canvasRef} width="350" height="622"></canvas>
