@@ -1,0 +1,68 @@
+.main-container {
+    .video-container {
+        position: relative;
+        width: 350px;
+        height: 622px;
+      }
+      
+      .video-container video, .video-container canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      
+
+  .controls-bottom {
+    position: relative; // Added this line
+    background-color: #dcdcdc;
+    height: 3.125rem;
+    width: 350px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+
+    .recording-wrapper {
+      flex: 1; // This will allow it to take up all available space, which will naturally center the record button.
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .download-button {
+      position: absolute; // Added this line
+      right: 15px; // Adjusted from padding-right to right for positioning
+      top: 50%; // Center it vertically
+      transform: translateY(-50%); // This will center the button vertically
+    }
+
+    .record-icon {
+      color: white; // sets the icon color to white
+      background-color: #ff5044; // sets the circle's fill color
+      border-radius: 50%; // makes the background circular
+      padding: 0.5rem; // adjusts the size of the circle around the icon
+
+      &:active {
+        color: darken(white, 20%); // darkens the icon color by 10%
+        background-color: darken(
+          #ff5044,
+          10%
+        ); // darkens the background color by 10%
+      }
+    }
+
+    .stop-recording-icon {
+      background-color: white; // sets the icon color to white
+      color: #ff5044; // sets the circle's fill color
+      border-radius: 50%; // makes the background circular
+      padding: 0.5rem; // adjusts the size of the circle around the icon
+
+      &:active {
+        background-color: darken(white, 20%); // darkens the icon color by 10%
+        color: darken(#ff5044, 10%); // darkens the background color by 10%
+      }
+    }
+  }
+}

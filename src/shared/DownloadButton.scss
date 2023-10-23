@@ -1,0 +1,20 @@
+// DownloadButton.scss
+
+.download-button {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px; // Adjust as needed
+    text-decoration: none;
+    font-size: 10px;
+    background-color: white;
+    border-radius: 10px;
+  
+    .fa-download {
+      margin-right: 10px; // Adjust space between the icon and text
+    }
+  }
+  
+  .disabled-link {
+    // Styles for disabled state
+  }
+  
