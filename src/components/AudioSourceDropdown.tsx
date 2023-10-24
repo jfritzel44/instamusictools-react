@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from "react";
 import Dropdown from "react-bootstrap/Dropdown";
-import "./VideoSourceDropdown.scss";
 
-interface VideoDropdownProps {
+interface AudioSourceDropdownProps {
   onSelect: (deviceId: string) => void; // Callback when a device is selected
 }
 
-const VideoDropdown: React.FC<VideoDropdownProps> = ({ onSelect }) => {
-  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedLabel, setSelectedLabel] = useState<string>("Select Video Source");
+const AudioSourceDropdown: React.FC<AudioSourceDropdownProps> = ({ onSelect }) => {
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedLabel, setSelectedLabel] = useState<string>("Select Audio Source");
 
   useEffect(() => {
     async function enumerateDevices() {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === "videoinput");
-      setVideoDevices(videoDevices);
+      const audioDevicesFiltered = devices.filter(device => device.kind === "audioinput");
+      setAudioDevices(audioDevicesFiltered);
 
       // Set the default selected label to the first device if it exists
-      if (videoDevices.length > 0) {
-        setSelectedLabel(videoDevices[0].label || "Unnamed Device");
+      if (audioDevicesFiltered.length > 0) {
+        setSelectedLabel(audioDevicesFiltered[0].label || "Unnamed Device");
       }
     }
 
@@ -32,12 +31,12 @@ const VideoDropdown: React.FC<VideoDropdownProps> = ({ onSelect }) => {
 
   return (
     <Dropdown>
-      <Dropdown.Toggle variant="secondary" id="video-dropdown">
+      <Dropdown.Toggle variant="secondary" id="audio-dropdown">
         {selectedLabel}
       </Dropdown.Toggle>
 
       <Dropdown.Menu>
-        {videoDevices.map(device => (
+        {audioDevices.map(device => (
           <Dropdown.Item 
             key={device.deviceId} 
             onClick={() => handleDeviceSelect(device.deviceId, device.label || "Unnamed Device")}
@@ -50,4 +49,4 @@ const VideoDropdown: React.FC<VideoDropdownProps> = ({ onSelect }) => {
   );
 };
 
-export default VideoDropdown;
+export default AudioSourceDropdown;

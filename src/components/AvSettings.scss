@@ -1,0 +1,20 @@
+// AvSettings.scss
+
+.av-settings {
+    display: flex;
+    flex-direction: column;
+    .settings-title {
+      font-weight: bold;
+    }
+  
+    .settings-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px; 
+  
+      .settings-label {
+        margin-right: 10px;
+      }
+    }
+  }
+  

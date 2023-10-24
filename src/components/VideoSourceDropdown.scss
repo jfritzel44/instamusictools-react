@@ -1,0 +1,15 @@
+// Assuming VideoSourceDropdown.scss
+
+#video-dropdown.btn-secondary,
+#audio-dropdown.btn-secondary {
+  background-color: #D9D9D9 !important;
+  border-color: #D9D9D9 !important; // if you want to change the border color as well
+
+  &:hover,
+  &:focus,
+  &:active,
+  &.active {
+    background-color: darken(#D9D9D9, 10%) !important; // slightly darker on hover, focus, active states
+    border-color: darken(#D9D9D9, 10%) !important;
+  }
+}

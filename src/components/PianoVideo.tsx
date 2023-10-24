@@ -8,7 +8,11 @@ import DownloadButton from "../shared/DownloadButton";
 import Dropdown from "react-bootstrap/Dropdown";
 import VideoDropdown from "./VideoSourceDropdown";
 
-function PianoVideo() {
+interface PianoVideoProps {
+  selectedDeviceId: string;
+}
+
+function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<
@@ -60,6 +64,16 @@ function PianoVideo() {
       setVideoAvailable(true);
     }
   }, [recordedChunks]);
+  // Runs when recordedChunks changes.
+
+  useEffect(() => {
+    if (selectedDeviceId) {
+      console.log("Got selected device id!");
+      console.log(selectedDeviceId);
+      
+      initCamera(selectedDeviceId);
+    }
+  }, [selectedDeviceId]);
 
   function handleDataAvailable(event: BlobEvent) {
     if (event.data.size > 0) {
@@ -144,8 +158,6 @@ function PianoVideo() {
 
   return (
     <div className="main-container">
-      <VideoDropdown onSelect={(deviceId) => initCamera(deviceId)} />
-
       <div className="video-container">
         <video ref={videoRef} width="350" height="622" autoPlay></video>
         <canvas ref={canvasRef} width="350" height="622"></canvas>
