@@ -6,10 +6,12 @@ import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import DownloadButton from "../shared/DownloadButton";
 
 interface PianoVideoProps {
-  selectedDeviceId: string;
+  selectedVideoDeviceId: string;
+  selectedAudioDeviceId: string;
 }
 
-function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
+const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
+  const { selectedVideoDeviceId, selectedAudioDeviceId } = selectedDevices;
   // Piano Functionality
   const whiteNotesMapper = [
     36, 38, 40, 41, 43, 45, 47, 48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67,
@@ -42,9 +44,7 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
 
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<
-    string | null
-  >(null);
+
 
   // Keeps track if the video is available for download.
   const [videoAvailable, setVideoAvailable] = useState(false);
@@ -69,25 +69,21 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
   useEffect(() => {
     async function enumerateDevices() {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(
-        (device) => device.kind === "videoinput"
-      );
-      const audioDevices = devices.filter(
-        (device) => device.kind === "audioinput"
-      );
-
+      const videoDevices = devices.filter((device) => device.kind === "videoinput");
+      const audioDevices = devices.filter((device) => device.kind === "audioinput");
+  
       setVideoDevices(videoDevices);
       setAudioDevices(audioDevices);
-
-      if (videoDevices.length > 0) {
-        initCamera(videoDevices[0].deviceId);
+  
+      if (videoDevices.length > 0 && audioDevices.length > 0) {
+        initCamera(videoDevices[0].deviceId, audioDevices[0].deviceId);
       }
     }
-
+  
     enumerateDevices();
   }, []);
-  // Runs only once after initial render of the component (because of [])
 
+  // Runs only once after initial render of the component (because of [])
   useEffect(() => {
     if (recordedChunks.length > 0) {
       const blob = new Blob(recordedChunks, { type: "video/webm" });
@@ -103,10 +99,10 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
   // Runs when recordedChunks changes.
 
   useEffect(() => {
-    if (selectedDeviceId) {
-      initCamera(selectedDeviceId);
+    if (selectedVideoDeviceId && selectedAudioDeviceId) {
+      initCamera(selectedVideoDeviceId, selectedAudioDeviceId);
     }
-  }, [selectedDeviceId]);
+  }, [selectedVideoDeviceId, selectedAudioDeviceId]);
 
   useEffect(() => {
     if (navigator.requestMIDIAccess) {
@@ -260,16 +256,20 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
     }
   };
 
-  async function initCamera(deviceId: string) {
-    const audioConstraints = selectedAudioDeviceId
-      ? { deviceId: selectedAudioDeviceId }
-      : true;
+  async function initCamera(videoDeviceId: string, audioDeviceId: string) {
+    console.log("Init Camera");
+    console.log(audioDeviceId);
 
+    console.log("Vid: ");
+    console.log(videoDeviceId);
+
+    const audioConstraints = audioDeviceId ? { deviceId: audioDeviceId } : true;
+  
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 1080, height: 1920, deviceId: deviceId },
+      video: { width: 1080, height: 1920, deviceId: videoDeviceId },
       audio: audioConstraints,
     });
-
+  
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
       videoRef.current.onloadedmetadata = async () => {
@@ -282,6 +282,7 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
       };
     }
   }
+  
 
   function handleStop() {
     const blob = new Blob(recordedChunks, { type: "video/webm" });
