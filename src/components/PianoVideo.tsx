@@ -21,6 +21,9 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
     82, 85, 87, 90, 92, 94, 97, 99, 102, 104, 106, 109, 111, 114, 116, 118, 121,
     123, 126,
   ];
+
+  const masterCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   const [pianoVerticalPosition, setPianoVerticalPosition] = useState(0);
   const whiteKeyHeight = 75;
   const blackKeyHeight = whiteKeyHeight * 0.65; // Typically, black keys are three-fourths the height of white keys
@@ -54,6 +57,14 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [shouldRedrawPiano, setShouldRedrawPiano] = useState(true);
+
+  const [userMediaStream, setUserMediaStream] = useState<MediaStream | null>(
+    null
+  );
+
+  const userMediaStreamRef = useRef<MediaStream | null>(null);
+
+  let animationFrameId: number | null = null;
 
   useEffect(() => {
     async function enumerateDevices() {
@@ -122,16 +133,6 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
       console.warn("Could not access your MIDI devices.");
     }
   }, []);
-
-  // Run drawPiano every frame (60fps ideally) using requestAnimationFrame
-  //   useEffect(() => {
-  //     const animate = () => {
-  //       console.log("Animate!");
-  //       //drawPiano();
-  //       requestAnimationFrame(animate);
-  //     };
-  //     animate();
-  // }, [noteHash]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -293,16 +294,45 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
     setVideoAvailable(true);
   }
 
+  const drawMasterCanvas = () => {
+    console.log("draw master canvas");
+
+    if (masterCanvasRef.current && videoRef.current && canvasRef.current) {
+      const ctx = masterCanvasRef.current.getContext("2d")!;
+      ctx.drawImage(videoRef.current, 0, 0, videoWidth, videoHeight);
+      ctx.drawImage(canvasRef.current, 0, 0, videoWidth, canvasHeight);
+    }
+  };
+
+  function drawLoop() {
+    drawMasterCanvas();
+
+    // Request the next frame
+    animationFrameId = requestAnimationFrame(drawLoop);
+  }
+
   function startRecording() {
-    console.log("start recording! ");
-    
+    console.log("start recording!");
+
+    drawLoop();
+
     setRecordedChunks([]); // Clear the recorded chunks here
     setVideoAvailable(false);
 
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
+    if (masterCanvasRef.current) {
+      const canvasStream = masterCanvasRef.current.captureStream();
+
+      // Retrieve the user media stream from the videoRef's srcObject
+      const userMediaStream = videoRef.current?.srcObject as MediaStream;
+
+      // Check and add the audio track to the canvas stream
+      if (userMediaStream && userMediaStream.getAudioTracks().length > 0) {
+        const audioTrack = userMediaStream.getAudioTracks()[0];
+        canvasStream.addTrack(audioTrack);
+      }
+
       if (MediaRecorder && MediaRecorder.isTypeSupported("video/webm")) {
-        mediaRecorderRef.current = new MediaRecorder(stream);
+        mediaRecorderRef.current = new MediaRecorder(canvasStream);
 
         // Add event listener for dataavailable event
         mediaRecorderRef.current.ondataavailable = handleDataAvailable;
@@ -323,6 +353,8 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      cancelAnimationFrame(animationFrameId ? animationFrameId : 0);
+      animationFrameId = null;
     }
   }
 
@@ -339,6 +371,12 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
           ref={canvasRef}
           width={videoWidth}
           height={canvasHeight}
+        ></canvas>
+        <canvas
+          ref={masterCanvasRef}
+          width={videoWidth}
+          height={videoHeight}
+          style={{ display: "none" }} // Hide it from the user
         ></canvas>
       </div>
 
