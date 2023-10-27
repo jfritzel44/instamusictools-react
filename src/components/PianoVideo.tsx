@@ -367,6 +367,7 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
           width={videoWidth}
           height={videoHeight}
           autoPlay
+          muted
         ></video>
         <canvas
           ref={canvasRef}
