@@ -11,6 +11,9 @@ interface PianoVideoProps {
 }
 
 const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
+  /* We can use this to keep track of the current animation frame ID.  We can then start it, and stop it. */  
+  const [currAnimationFrameId, setCurrAnimationFrameId] = useState<number | null>();
+
   const { selectedVideoDeviceId, selectedAudioDeviceId } = selectedDevices;
   // Piano Functionality
   const whiteNotesMapper = [
@@ -28,16 +31,12 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
 
   const [pianoVerticalPosition, setPianoVerticalPosition] = useState(0);
   const whiteKeyHeight = 75;
-  const blackKeyHeight = whiteKeyHeight * 0.65; // Typically, black keys are three-fourths the height of white keys
 
   const [noteHash, setNoteHash] = useState<Record<number, boolean>>({});
 
   const videoWidth = 350;
   const videoHeight = 622;
-  const totalKeys = 60;
-  const whiteKeyWidth = videoWidth / ((totalKeys * 7) / 12);
-  const blackKeyWidth = whiteKeyWidth / 2;
-
+  const totalKeys = 80; // Set the global total number of keys.
   const canvasHeight = whiteKeyHeight;
 
   // End Piano Functionality
@@ -56,13 +55,6 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const [shouldRedrawPiano, setShouldRedrawPiano] = useState(true);
-
-  const [userMediaStream, setUserMediaStream] = useState<MediaStream | null>(
-    null
-  );
-
-  const userMediaStreamRef = useRef<MediaStream | null>(null);
 
   let animationFrameId: number | null = null;
 
@@ -99,6 +91,8 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   // Runs when recordedChunks changes.
 
   useEffect(() => {
+    console.log("select device effect");
+
     if (selectedVideoDeviceId && selectedAudioDeviceId) {
       initCamera(selectedVideoDeviceId, selectedAudioDeviceId);
     }
@@ -199,7 +193,6 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
       ctx.drawImage(videoRef.current, 0, 0, videoWidth, videoHeight);
 
       // Piano dimensions
-      const totalKeys = 60; // 5 octaves x 12 keys
       const whiteKeyWidth = 540 / ((totalKeys * 7) / 12); // Divide by number of white keys
       const blackKeyWidth = whiteKeyWidth / 2;
       const blackKeyHeight = whiteKeyHeight * 0.65; // Typically, black keys are three-fourths the height of white keys
@@ -257,13 +250,10 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   };
 
   async function initCamera(videoDeviceId: string, audioDeviceId: string) {
-    console.log("Init Camera");
-    console.log(audioDeviceId);
-
-    console.log("Vid: ");
-    console.log(videoDeviceId);
-
     const audioConstraints = audioDeviceId ? { deviceId: audioDeviceId } : true;
+
+    console.log("init camera");
+    console.log("video device " + videoDeviceId);
   
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 1080, height: 1920, deviceId: videoDeviceId },
@@ -283,7 +273,6 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
     }
   }
   
-
   function handleStop() {
     const blob = new Blob(recordedChunks, { type: "video/webm" });
     const url = URL.createObjectURL(blob);
@@ -296,8 +285,6 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   }
 
   const drawMasterCanvas = () => {
-    console.log("draw master canvas");
-
     if (masterCanvasRef.current && videoRef.current && canvasRef.current) {
       const ctx = masterCanvasRef.current.getContext("2d")!;
       ctx.drawImage(videoRef.current, 0, 0, videoWidth, videoHeight);
@@ -310,11 +297,11 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
 
     // Request the next frame
     animationFrameId = requestAnimationFrame(drawLoop);
+
+    setCurrAnimationFrameId(animationFrameId);
   }
 
   function startRecording() {
-    console.log("start recording!");
-
     drawLoop();
 
     setRecordedChunks([]); // Clear the recorded chunks here
@@ -351,11 +338,16 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   }
 
   function stopRecording() {
+    console.log("stop recording");
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      cancelAnimationFrame(animationFrameId ? animationFrameId : 0);
-      animationFrameId = null;
+
+    
+      cancelAnimationFrame(currAnimationFrameId ? currAnimationFrameId : 0);
+      setCurrAnimationFrameId(null);
+
+      console.log("stop complete!");
     }
   }
 
