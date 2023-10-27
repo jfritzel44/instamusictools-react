@@ -25,6 +25,12 @@ const AudioSourceDropdown: React.FC<AudioSourceDropdownProps> = ({ onSelect }) =
   }, []);
 
   const handleDeviceSelect = (deviceId: string, label: string) => {
+    console.log("Audio Source DeviceId:");
+    console.log(deviceId);
+
+    console.log("Label: ");
+    console.log(label);
+
     onSelect(deviceId);
     setSelectedLabel(label); // Update the selected label state when a new device is chosen
   };

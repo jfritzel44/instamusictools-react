@@ -9,15 +9,13 @@ import Dropdown from "react-bootstrap/Dropdown";
 import VideoDropdown from "./VideoSourceDropdown";
 
 interface PianoVideoProps {
-  selectedDeviceId: string;
+  selectedVideoDeviceId: string;
+  selectedAudioDeviceId: string;
 }
 
-function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
+function PianoVideo({ selectedVideoDeviceId, selectedAudioDeviceId }: PianoVideoProps) {
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<
-    string | null
-  >(null);
 
   // Keeps track if the video is available for download.
   const [videoAvailable, setVideoAvailable] = useState(false);
@@ -44,7 +42,7 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
       setAudioDevices(audioDevices);
 
       if (videoDevices.length > 0) {
-        initCamera(videoDevices[0].deviceId);
+        initCamera(videoDevices[0].deviceId, audioDevices[0].deviceId);
       }
     }
 
@@ -55,7 +53,6 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
   useEffect(() => {
     if (recordedChunks.length > 0) {
       const blob = new Blob(recordedChunks, { type: "video/webm" });
-      console.log("Final blob size:", blob.size);
       const url = URL.createObjectURL(blob);
       if (downloadLinkRef.current) {
         downloadLinkRef.current.href = url;
@@ -67,35 +64,24 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
   // Runs when recordedChunks changes.
 
   useEffect(() => {
-    if (selectedDeviceId) {
-      console.log("Got selected device id!");
-      console.log(selectedDeviceId);
-      
-      initCamera(selectedDeviceId);
+    if (selectedVideoDeviceId && selectedAudioDeviceId) {      
+      initCamera(selectedVideoDeviceId, selectedAudioDeviceId);
     }
-  }, [selectedDeviceId]);
+  }, [selectedVideoDeviceId, selectedAudioDeviceId]);
 
   function handleDataAvailable(event: BlobEvent) {
     if (event.data.size > 0) {
       setRecordedChunks((prev) => {
         const updated = prev.concat(event.data);
-        console.log("Updated chunks:", updated);
         return updated;
       });
     }
   }
 
-  async function initCamera(deviceId: string) {
-    console.log("Init camera with: ");
-    console.log(deviceId);
-
-    const audioConstraints = selectedAudioDeviceId
-      ? { deviceId: selectedAudioDeviceId }
-      : true;
-
+  async function initCamera(selectedVideoDeviceId: string, selectedAudioDeviceId: string) {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 1080, height: 1920, deviceId: deviceId },
-      audio: audioConstraints,
+      video: { width: 1080, height: 1920, deviceId: selectedVideoDeviceId },
+      audio: { deviceId: selectedAudioDeviceId },
     });
 
     if (videoRef.current) {
@@ -159,7 +145,7 @@ function PianoVideo({ selectedDeviceId }: PianoVideoProps) {
   return (
     <div className="main-container">
       <div className="video-container">
-        <video ref={videoRef} width="350" height="622" autoPlay></video>
+        <video ref={videoRef} autoPlay muted></video>
         <canvas ref={canvasRef} width="350" height="622"></canvas>
       </div>
 
