@@ -1,28 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Dropdown from "react-bootstrap/Dropdown";
 
 interface AudioSourceDropdownProps {
-  onSelect: (deviceId: string) => void; // Callback when a device is selected
+  devices: MediaDeviceInfo[];                    // The prop to pass the audio devices
+  onSelect: (deviceId: string) => void;          // Callback when a device is selected
 }
 
-const AudioSourceDropdown: React.FC<AudioSourceDropdownProps> = ({ onSelect }) => {
-  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+const AudioSourceDropdown: React.FC<AudioSourceDropdownProps> = ({ devices, onSelect }) => {
   const [selectedLabel, setSelectedLabel] = useState<string>("Select Audio Source");
 
-  useEffect(() => {
-    async function enumerateDevices() {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioDevicesFiltered = devices.filter(device => device.kind === "audioinput");
-      setAudioDevices(audioDevicesFiltered);
-
-      // Set the default selected label to the first device if it exists
-      if (audioDevicesFiltered.length > 0) {
-        setSelectedLabel(audioDevicesFiltered[0].label || "Unnamed Device");
-      }
+  // Set the default selected label based on the first device if it exists
+  useState(() => {
+    if (devices.length > 0) {
+      setSelectedLabel(devices[0].label || "Unnamed Device");
     }
-
-    enumerateDevices();
-  }, []);
+  });
 
   const handleDeviceSelect = (deviceId: string, label: string) => {
     onSelect(deviceId);
@@ -36,7 +28,7 @@ const AudioSourceDropdown: React.FC<AudioSourceDropdownProps> = ({ onSelect }) =
       </Dropdown.Toggle>
 
       <Dropdown.Menu>
-        {audioDevices.map(device => (
+        {devices.map(device => (
           <Dropdown.Item 
             key={device.deviceId} 
             onClick={() => handleDeviceSelect(device.deviceId, device.label || "Unnamed Device")}

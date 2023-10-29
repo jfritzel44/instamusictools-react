@@ -1,8 +1,8 @@
 // AvSettings.tsx
 
 import React from "react";
-import VideoDropdown from "./VideoSourceDropdown";
-import AudioSourceDropdown from "./AudioSourceDropdown";
+import VideoDropdown from "../shared/VideoSourceDropdown";
+import AudioSourceDropdown from "../shared/AudioSourceDropdown";
 import "./AvSettings.scss"; // Import the style for this component
 
 interface AvSettingsProps {
@@ -13,7 +13,7 @@ interface AvSettingsProps {
 const AvSettings: React.FC<AvSettingsProps> = ({ onVideoSelect, onAudioSelect }) => {
   return (
     <div className="av-settings">
-      <p className="settings-title">Audio / Video Settings</p>
+      {/* <p className="settings-title">Audio / Video Settings</p>
 
       <div>
         <div className="settings-row">
@@ -24,7 +24,7 @@ const AvSettings: React.FC<AvSettingsProps> = ({ onVideoSelect, onAudioSelect })
             <label className="settings-label">Audio <br /> Settings:</label>
             <AudioSourceDropdown onSelect={onAudioSelect} />
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

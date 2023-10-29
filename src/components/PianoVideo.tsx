@@ -8,11 +8,19 @@ import DownloadButton from "../shared/DownloadButton";
 interface PianoVideoProps {
   selectedVideoDeviceId: string;
   selectedAudioDeviceId: string;
+  videoDevices: MediaDeviceInfo[];
+  audioDevices: MediaDeviceInfo[];
 }
 
 const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
-  /* We can use this to keep track of the current animation frame ID.  We can then start it, and stop it. */  
-  const [currAnimationFrameId, setCurrAnimationFrameId] = useState<number | null>();
+  const [pianoVerticalPosition, setPianoVerticalPosition] = useState(0);
+
+  /* We can use this to keep track of the current animation frame ID.  We can then start it, and stop it. */
+  const [currAnimationFrameId, setCurrAnimationFrameId] = useState<
+    number | null
+  >();
+
+  const [noteHash, setNoteHash] = useState<Record<number, boolean>>({});
 
   const { selectedVideoDeviceId, selectedAudioDeviceId } = selectedDevices;
   // Piano Functionality
@@ -29,11 +37,7 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
 
   const masterCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const [pianoVerticalPosition, setPianoVerticalPosition] = useState(0);
   const whiteKeyHeight = 75;
-
-  const [noteHash, setNoteHash] = useState<Record<number, boolean>>({});
-
   const videoWidth = 350;
   const videoHeight = 622;
   const totalKeys = 80; // Set the global total number of keys.
@@ -43,7 +47,6 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
 
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-
 
   // Keeps track if the video is available for download.
   const [videoAvailable, setVideoAvailable] = useState(false);
@@ -61,17 +64,21 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   useEffect(() => {
     async function enumerateDevices() {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter((device) => device.kind === "videoinput");
-      const audioDevices = devices.filter((device) => device.kind === "audioinput");
-  
+      const videoDevices = devices.filter(
+        (device) => device.kind === "videoinput"
+      );
+      const audioDevices = devices.filter(
+        (device) => device.kind === "audioinput"
+      );
+
       setVideoDevices(videoDevices);
       setAudioDevices(audioDevices);
-  
+
       if (videoDevices.length > 0 && audioDevices.length > 0) {
         initCamera(videoDevices[0].deviceId, audioDevices[0].deviceId);
       }
     }
-  
+
     enumerateDevices();
   }, []);
 
@@ -79,7 +86,6 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   useEffect(() => {
     if (recordedChunks.length > 0) {
       const blob = new Blob(recordedChunks, { type: "video/webm" });
-      console.log("Final blob size:", blob.size);
       const url = URL.createObjectURL(blob);
       if (downloadLinkRef.current) {
         downloadLinkRef.current.href = url;
@@ -91,11 +97,7 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   // Runs when recordedChunks changes.
 
   useEffect(() => {
-    console.log("select device effect");
-
-    if (selectedVideoDeviceId && selectedAudioDeviceId) {
-      initCamera(selectedVideoDeviceId, selectedAudioDeviceId);
-    }
+    initCamera(selectedVideoDeviceId, selectedAudioDeviceId);
   }, [selectedVideoDeviceId, selectedAudioDeviceId]);
 
   useEffect(() => {
@@ -106,15 +108,12 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
     }
 
     function onMIDISuccess(midiAccess: WebMidi.MIDIAccess) {
-      console.log("Midi Success!");
       const inputs = midiAccess.inputs.values();
       for (
         let input = inputs.next();
         input && !input.done;
         input = inputs.next()
       ) {
-        console.log("Input");
-        console.log(input);
         input.value.onmidimessage = onMIDIMessage;
       }
     }
@@ -166,9 +165,6 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
       return;
     }
 
-    console.log("Received MIDI");
-    console.log(note);
-
     if (isNoteOnMessage) {
       setNoteHash((prev) => ({
         ...prev,
@@ -183,8 +179,6 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   }
 
   const drawPiano = () => {
-    console.log("draw piano!");
-
     if (canvasRef.current && videoRef.current) {
       const yOffset = pianoVerticalPosition;
 
@@ -250,16 +244,16 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   };
 
   async function initCamera(videoDeviceId: string, audioDeviceId: string) {
-    const audioConstraints = audioDeviceId ? { deviceId: audioDeviceId } : true;
+    if (!videoDeviceId || !audioDeviceId) return;
 
-    console.log("init camera");
-    console.log("video device " + videoDeviceId);
-  
+    if (!videoDeviceId) videoDeviceId = videoDevices[0].deviceId;
+    if (!audioDeviceId) audioDeviceId = audioDevices[0].deviceId;
+
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 1080, height: 1920, deviceId: videoDeviceId },
-      audio: audioConstraints,
+      audio: { deviceId: audioDeviceId },
     });
-  
+
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
       videoRef.current.onloadedmetadata = async () => {
@@ -272,7 +266,7 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
       };
     }
   }
-  
+
   function handleStop() {
     const blob = new Blob(recordedChunks, { type: "video/webm" });
     const url = URL.createObjectURL(blob);
@@ -295,9 +289,10 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   function drawLoop() {
     drawMasterCanvas();
 
-    // Request the next frame
+    // Request the next frame, will loop indefinitely until DL.
     animationFrameId = requestAnimationFrame(drawLoop);
 
+    // So we can cancel the animation by id in stop download, pretty much.
     setCurrAnimationFrameId(animationFrameId);
   }
 
@@ -338,34 +333,63 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
   }
 
   function stopRecording() {
-    console.log("stop recording");
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
 
-    
       cancelAnimationFrame(currAnimationFrameId ? currAnimationFrameId : 0);
       setCurrAnimationFrameId(null);
-
-      console.log("stop complete!");
     }
   }
 
   return (
     <div className="main-container">
       <div className="video-container">
+        {/* This is just the piano */}
+        <canvas
+          className="piano-canvas"
+          ref={canvasRef}
+          width={videoWidth}
+          height={canvasHeight}
+        ></canvas>
+
+        {/* Canvas for main video */}
         <video
+          className="main-video"
           ref={videoRef}
           width={videoWidth}
           height={videoHeight}
           autoPlay
           muted
         ></video>
-        <canvas
-          ref={canvasRef}
-          width={videoWidth}
-          height={canvasHeight}
-        ></canvas>
+
+        <div className="controls-container">
+          <div className="controls-bottom">
+            <div className="recording-wrapper">
+              {!isRecording ? (
+                <FontAwesomeIcon
+                  onClick={startRecording}
+                  icon={faVideo}
+                  className="record-icon"
+                />
+              ) : (
+                <FontAwesomeIcon
+                  onClick={stopRecording}
+                  icon={faSquare}
+                  className="stop-recording-icon"
+                />
+              )}
+            </div>
+
+            <DownloadButton
+              className="download-button"
+              videoAvailable={videoAvailable}
+              recordedChunks={recordedChunks}
+            />
+          </div>
+        </div>
+
+        {/* Canvas that will have video, and piano overlay for output */}
         <canvas
           ref={masterCanvasRef}
           width={videoWidth}
@@ -373,34 +397,8 @@ const PianoVideo: React.FC<PianoVideoProps> = (selectedDevices) => {
           style={{ display: "none" }} // Hide it from the user
         ></canvas>
       </div>
-
-      <div className="controls-container">
-        <div className="controls-bottom">
-          <div className="recording-wrapper">
-            {!isRecording ? (
-              <FontAwesomeIcon
-                onClick={startRecording}
-                icon={faVideo}
-                className="record-icon"
-              />
-            ) : (
-              <FontAwesomeIcon
-                onClick={stopRecording}
-                icon={faSquare}
-                className="stop-recording-icon"
-              />
-            )}
-          </div>
-
-          <DownloadButton
-            className="download-button"
-            videoAvailable={videoAvailable}
-            recordedChunks={recordedChunks}
-          />
-        </div>
-      </div>
     </div>
   );
-}
+};
 
 export default PianoVideo;

@@ -1,34 +1,70 @@
-// InstaKeyMain.tsx
-
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
+import AudioSourceDropdown from "../shared/AudioSourceDropdown";
 import PianoVideo from "./PianoVideo";
-import AvSettings from "./AvSettings"; // Import the new AvSettings component
+import VideoSourceDropdown from "../shared/VideoSourceDropdown";
 import "./InstaKeysMain.scss";
 
 const InstaKeyMain = () => {
-  // Selected Device ID for Webcam
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+
   const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<
     string | null
   >(null);
 
-  // Selected Device ID for Microphone
   const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<
     string | null
   >(null);
 
+  useEffect(() => {
+    async function enumerateDevices() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDeviceList = devices.filter(
+        (device) => device.kind === "videoinput"
+      );
+      const audioDeviceList = devices.filter(
+        (device) => device.kind === "audioinput"
+      );
+
+      setVideoDevices(videoDeviceList);
+      setAudioDevices(audioDeviceList);
+
+      setSelectedAudioDeviceId(audioDeviceList[0].deviceId);
+      setSelectedVideoDeviceId(videoDeviceList[0].deviceId);
+    }
+
+    enumerateDevices();
+  }, []);
+
   return (
     <div className="instakeys-container">
-      <PianoVideo
-        selectedVideoDeviceId={selectedVideoDeviceId ?? ""}
-        selectedAudioDeviceId={selectedAudioDeviceId ?? ""}
-      />
+      {audioDevices.length > 0 && videoDevices.length > 0 && (
+        <>
+          <div className="piano-video">
+            <PianoVideo
+              videoDevices={videoDevices}
+              audioDevices={audioDevices}
+              selectedVideoDeviceId={selectedVideoDeviceId ?? ""}
+              selectedAudioDeviceId={selectedAudioDeviceId ?? ""}
+            />
+          </div>
 
-      <div className="all-settings">
-        <AvSettings
-          onVideoSelect={setSelectedVideoDeviceId}
-          onAudioSelect={setSelectedAudioDeviceId}
-        />
-      </div>
+          <div className="av-settings">
+            <p>Audio / Video Settings</p>
+            <div>
+              <VideoSourceDropdown
+                devices={videoDevices}
+                onSelect={setSelectedVideoDeviceId}
+              />
+              <AudioSourceDropdown
+                devices={audioDevices}
+                onSelect={setSelectedAudioDeviceId}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
